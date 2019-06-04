@@ -7,12 +7,14 @@ import { PlayerController } from "./game/playerController";
 import { TransformSystem } from "./modules/transfromSystem";
 import { BillBoardComponentSystem } from "./modules/billboardComponent";
 import { AttackManager } from "./game/attackManager";
+import { TextPopup } from "./game/textPopup";
 
 enum UnitTypes {CHIVALRY, PIKES, ARCHERS, INFANTRY}
 AttackManager.addBonus(UnitTypes.CHIVALRY, UnitTypes.ARCHERS, 0.8)
 AttackManager.addBonus(UnitTypes.PIKES, UnitTypes.CHIVALRY, 0.7)
 AttackManager.addBonus(UnitTypes.ARCHERS, UnitTypes.CHIVALRY, 0.3)
 AttackManager.addBonus(UnitTypes.INFANTRY, UnitTypes.ARCHERS, 0.1)
+AttackManager.addBonus(UnitTypes.ARCHERS, UnitTypes.INFANTRY, -0.6)
 
 const grid = new Grid(8,8,0.2,0.01)
 grid.transform.position = new Vector3(8,0,8)
@@ -29,8 +31,8 @@ gridConfig.tileMaterialHostile.albedoTexture = new Texture("images/tile/hostile.
 
 const gridManager = new GridManager(grid,gridConfig)
 
-const unit1 = new Unit(new BoxShape(), {attackRange: 1, moveRange: 2, health: 1, unitType: 0})
-const unit2 = new Unit(new BoxShape(), {attackRange: 1, moveRange: 3, health: 1, unitType: 0})
+const unit1 = new Unit(new BoxShape(), {attackRange: 1, moveRange: 2, health: 1, unitType: UnitTypes.ARCHERS})
+const unit2 = new Unit(new BoxShape(), {attackRange: 1, moveRange: 3, health: 1, unitType: UnitTypes.INFANTRY})
 
 const hostileMaterial = new Material()
 hostileMaterial.albedoColor = Color3.Red()
@@ -48,11 +50,14 @@ factionAI.addUnit(unit2)
 TurnManager.addFaction(factionPlayer)
 TurnManager.addFaction(factionAI)
 
-GridManager.addToGrid(unit1, GridManager.getTileByIndex(4,4))
+GridManager.addToGrid(unit1, GridManager.getTileByIndex(4,2))
 GridManager.addToGrid(unit2, GridManager.getTileByIndex(3,2))
 
 const playerController = new PlayerController(factionPlayer)
 TurnManager.addListener(playerController)
+
+const textPopup = new TextPopup()
+Unit.addListener(textPopup)
 
 const transformSystem = new TransformSystem()
 engine.addSystem(transformSystem)

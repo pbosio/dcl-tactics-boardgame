@@ -6,6 +6,8 @@ import { GridManager } from "../grid/gridManager";
 import { MessageManager } from "../messages/messageManager";
 import { MoveUnitMessage } from "../messages/moveUnitMessage";
 import { BillBoardComponent } from "../modules/billboardComponent";
+import { AttackMessage } from "../messages/attackMessage";
+import { AttackManager } from "./attackManager";
 
 export class PlayerController implements TurnManager.IOnTurnChangeListener, Tile.IOnClickListener{
     private _playerFaction: Faction
@@ -122,6 +124,7 @@ export class PlayerController implements TurnManager.IOnTurnChangeListener, Tile
     private onAttack(srcUnit: Unit, atkTile: Tile){
         GridManager.clearPaintedTiles()
         this._currentBehavior = this._noBehavior
+        MessageManager.send(new AttackMessage(srcUnit, AttackManager.getAttackInstance(srcUnit, atkTile.object as Unit)))
     }
 
     private onCancelAction(){

@@ -289,7 +289,7 @@ class StateAttackEnemy extends UnitATKBaseState{
         this._time = 0
         this._hasAttacked = false
         this._projectileStarted = false
-        //TODO: start animation
+            //TODO: start animation
     }
 
     onUpdate(dt: number): boolean{
