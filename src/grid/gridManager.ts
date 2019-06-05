@@ -223,7 +223,7 @@ class GridAStar{
             currentLowestF=Number.MAX_VALUE
             id=0
             for (i=0; i<openList.length; i++) {
-                if (openList[i].aStar.scoreF<currentLowestF){
+                if (openList[i].aStar.scoreF<=currentLowestF){
                     currentLowestF=openList[i].aStar.scoreF
                     currentTile = openList[i]
                     id =i
@@ -313,7 +313,7 @@ class GridAStar{
                 break
             }
 
-            openList.splice(id)
+            openList.splice(id,1)
         }
         
         if(currentTile == null){

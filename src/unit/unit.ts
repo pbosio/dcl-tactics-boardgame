@@ -24,7 +24,7 @@ export class Unit extends Entity implements Tile.ITileableObject{
     tile: Tile;
     factionData: Unit.FactionData
 
-    constructor(shape: Shape, properties: Unit.UnitProperties){
+    constructor(shape: Shape, properties: Unit.UnitProperties, scale?: Vector3){
         super()
 
         this._transform = new Transform()
@@ -37,8 +37,12 @@ export class Unit extends Entity implements Tile.ITileableObject{
             }
         }))
 
-        this._lifeBarSystem = new LifeBar(this)
-        engine.addSystem(this._lifeBarSystem)
+        if (scale){
+            this._transform.scale = scale
+        }
+
+        //this._lifeBarSystem = new LifeBar(this)
+        //engine.addSystem(this._lifeBarSystem)
 
         this._stateMachine = new StateMachine()
         engine.addSystem(this._stateMachine)
@@ -118,9 +122,10 @@ export class Unit extends Entity implements Tile.ITileableObject{
             path.push(tilePath[i].transform.position)
         }
 
-        this._transform.lookAt(new Vector3(this.tile.transform.position.x, this._transform.position.y, this.tile.transform.position.z))
+        this._transform.lookAt(new Vector3(path[1].x, this._transform.position.y, path[1].z))
 
         this.tile.object = null
+        this.tile = null
         this.addComponent(new FollowPathComponent(path,path.length/this.getMoveSpeed(), ()=>{
                 let targetTile = tilePath[tilePath.length-1]
                 targetTile.object = this
@@ -261,7 +266,8 @@ class StateRotateTowardsEnemy extends UnitATKBaseState{
 
     onStart(){
         this._stateRunning = true
-        this._currentUnit.addComponent(new RotateTransformComponent(this._currentUnit.getTransform().rotation, this._targetUnit.getTransform().rotation,
+        let rot = Quaternion.LookRotation(this._targetUnit.getTransform().position.subtract(this._currentUnit.getTransform().position))
+        this._currentUnit.addComponent(new RotateTransformComponent(this._currentUnit.getTransform().rotation, rot,
             this._rotationSpd, ()=>this._stateRunning = false))
     }
 

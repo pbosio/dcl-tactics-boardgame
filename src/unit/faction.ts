@@ -24,7 +24,7 @@ export class Faction{
     }
 
     removeUnit(unit: Unit){
-        this._units.splice(this._units.indexOf(unit))
+        this._units.splice(this._units.indexOf(unit),1)
     }
 }
 

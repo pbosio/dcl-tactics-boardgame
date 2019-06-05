@@ -31,15 +31,17 @@ gridConfig.tileMaterialHostile.albedoTexture = new Texture("images/tile/hostile.
 
 const gridManager = new GridManager(grid,gridConfig)
 
-const unit1 = new Unit(new BoxShape(), {attackRange: 1, moveRange: 2, health: 1, unitType: UnitTypes.ARCHERS})
-const unit2 = new Unit(new BoxShape(), {attackRange: 1, moveRange: 3, health: 1, unitType: UnitTypes.INFANTRY})
+const knightShape_white = new GLTFShape("models/knight_white.glb")
+const knightShape_black = new GLTFShape("models/knight_black.glb")
+const archerShape_white = new GLTFShape("models/archer_white.glb")
+const archerShape_black = new GLTFShape("models/archer_black.glb")
+const pikeShape_white = new GLTFShape("models/pike_white.glb")
+const pikeShape_black = new GLTFShape("models/pike_black.glb")
+const soldierShape_white = new GLTFShape("models/soldier_white.glb")
+const soldierShape_black = new GLTFShape("models/soldier_black.glb")
 
-const hostileMaterial = new Material()
-hostileMaterial.albedoColor = Color3.Red()
-unit2.addComponent(hostileMaterial)
-
-unit1.getTransform().scale = new Vector3(0.1,0.1,0.1)
-unit2.getTransform().scale = new Vector3(0.1,0.1,0.1)
+const unit1 = new Unit(knightShape_white, {attackRange: 1, moveRange: 2, health: 1, unitType: UnitTypes.ARCHERS})
+const unit2 = new Unit(pikeShape_black, {attackRange: 1, moveRange: 3, health: 1, unitType: UnitTypes.INFANTRY})
 
 const factionPlayer = new Faction("player")
 const factionAI = new Faction("AI")
