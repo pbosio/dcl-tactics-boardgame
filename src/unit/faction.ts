@@ -6,12 +6,25 @@ export class Faction{
 
     get name(): string{return this._name}
 
-    private static _factions: Record<string, Faction> = {}
-    static getFaction(factionName: string){return Faction._factions[factionName]}
+    private static _factions: Faction[] = []
+    static getFaction(factionName: string){
+        Faction._factions.forEach(faction => {
+            if(faction.name == factionName) return faction
+        });
+        return null
+    }
+
+    static getAllUnits(): Unit[]{
+        let ret: Unit[] = []
+        Faction._factions.forEach(faction => {
+            ret = ret.concat(faction._units)
+        });
+        return ret
+    }
 
     constructor(factionName: string){
         this._name = factionName
-        Faction._factions[factionName] = this
+        Faction._factions.push(this)
     }
 
     addUnit(unit: Unit){

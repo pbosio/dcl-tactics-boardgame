@@ -40,6 +40,8 @@ export class PlayerController implements TurnManager.IOnTurnChangeListener, Tile
         const actionAttackMat = new BasicMaterial()
         actionAttackMat.texture = new Texture("images/actions/attack.png")
 
+        const actionDisplayerY = 0.4
+
         this._actionsDisplayer = new Entity()
         this._actionsDisplayer.addComponent(new BillBoardComponent())
         this._actionsDisplayer.addComponent(new Transform())
@@ -48,7 +50,7 @@ export class PlayerController implements TurnManager.IOnTurnChangeListener, Tile
         const actionAttack = new Entity()
         actionAttack.setParent(this._actionsDisplayer)
         actionAttack.addComponent(new PlaneShape())
-        actionAttack.addComponent(new Transform({position: new Vector3(-0.2,0.2,0), scale: new Vector3(0.2,0.2,0.2)}))
+        actionAttack.addComponent(new Transform({position: new Vector3(-0.2,actionDisplayerY,0), scale: new Vector3(0.2,0.2,0.2)}))
         actionAttack.addComponent(actionAttackMat)
         actionAttack.addComponent(new OnClick(event=>{
             this.hideActions()
@@ -59,7 +61,7 @@ export class PlayerController implements TurnManager.IOnTurnChangeListener, Tile
         const actionMove = new Entity()
         actionMove.setParent(this._actionsDisplayer)
         actionMove.addComponent(new PlaneShape())
-        actionMove.addComponent(new Transform({position: new Vector3(0,0.2,0), scale: new Vector3(0.2,0.2,0.2)}))
+        actionMove.addComponent(new Transform({position: new Vector3(0,actionDisplayerY,0), scale: new Vector3(0.2,0.2,0.2)}))
         actionMove.addComponent(actionMoveMat)
         actionMove.addComponent(new OnClick(event=>{
             this.hideActions()
@@ -70,7 +72,7 @@ export class PlayerController implements TurnManager.IOnTurnChangeListener, Tile
         const actionRest = new Entity()
         actionRest.setParent(this._actionsDisplayer)
         actionRest.addComponent(new PlaneShape())
-        actionRest.addComponent(new Transform({position: new Vector3(0.2,0.2,0), scale: new Vector3(0.2,0.2,0.2)}))
+        actionRest.addComponent(new Transform({position: new Vector3(0.2,actionDisplayerY,0), scale: new Vector3(0.2,0.2,0.2)}))
         actionRest.addComponent(actionRestMat)
 
         engine.removeEntity(this._actionsDisplayer)

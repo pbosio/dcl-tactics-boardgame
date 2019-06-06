@@ -2,9 +2,16 @@ import { Tile } from "../grid/tile";
 import { Faction } from "./faction";
 import { TurnManager } from "../game/turnManager";
 import { FollowPathComponent, RotateTransformComponent } from "../modules/transfromSystem";
-import { BillBoardComponent } from "../modules/billboardComponent";
 import { StateMachine } from "../modules/stateMachine";
 import { AttackManager } from "../game/attackManager";
+import { TimerSystem } from "../modules/timerSystem";
+
+const ANIM_IDLE = "idle"
+const ANIM_ATK = "attack"
+const ANIM_HIT = "hit"
+const ANIM_DEAD = "dead"
+const ANIM_WALK = "walk"
+const ANIM_LENGTH = 2
 
 export class Unit extends Entity implements Tile.ITileableObject{
 
@@ -14,9 +21,10 @@ export class Unit extends Entity implements Tile.ITileableObject{
     }
 
     private _transform: Transform
+    private _animator: Animator
+
     private _properties: Unit.UnitProperties
     private _currentHP: number
-    private _lifeBarSystem: LifeBar
     private _stateMachine: StateMachine
 
     private _attackStates: UnitATKBaseState[] = []
@@ -27,8 +35,11 @@ export class Unit extends Entity implements Tile.ITileableObject{
     constructor(shape: Shape, properties: Unit.UnitProperties, scale?: Vector3){
         super()
 
-        this._transform = new Transform()
         this._properties = properties
+
+        this._transform = new Transform()
+        this._animator = new Animator()
+
         this.addComponent(this._transform)
         this.addComponent(shape)
         this.addComponent(new OnClick(event=>{
@@ -41,20 +52,27 @@ export class Unit extends Entity implements Tile.ITileableObject{
             this._transform.scale = scale
         }
 
-        //this._lifeBarSystem = new LifeBar(this)
-        //engine.addSystem(this._lifeBarSystem)
-
         this._stateMachine = new StateMachine()
         engine.addSystem(this._stateMachine)
 
         this._attackStates.push(new StateStartAttack())
         this._attackStates.push(new StateRotateTowardsEnemy())
-        this._attackStates.push(new StateAttackEnemy())
+        this._attackStates.push(new StateAttackEnemy(properties.projectile))
         this._attackStates.push(new StateEndAttack())
         
         for (let i=0; i<this._attackStates.length-1;i++){
             this._attackStates[i].nextState = this._attackStates[i+1]
         }
+
+        this._currentHP = properties.health
+
+        this._animator.addClip(new AnimationState(ANIM_IDLE,{looping: true}))
+        this._animator.addClip(new AnimationState(ANIM_WALK,{looping: true}))
+        this._animator.addClip(new AnimationState(ANIM_ATK))
+        this._animator.addClip(new AnimationState(ANIM_HIT))
+        this._animator.addClip(new AnimationState(ANIM_DEAD))
+
+        this.playIdle()
     }
 
     getTransform(): Transform {
@@ -110,6 +128,28 @@ export class Unit extends Entity implements Tile.ITileableObject{
         return 1
     }
 
+    playIdle(){
+        this._animator.getClip(ANIM_IDLE).play()
+    }
+
+    playWalk(){
+        this._animator.getClip(ANIM_WALK).play()
+    }
+
+    playAttack(){
+        this._animator.getClip(ANIM_ATK).play()
+        TimerSystem.instance.createTimer(ANIM_LENGTH,()=> this.playIdle()) 
+    }
+
+    playHit(){
+        this._animator.getClip(ANIM_HIT).play()
+        TimerSystem.instance.createTimer(ANIM_LENGTH,()=> this.playIdle()) 
+    }
+
+    playDead(){
+        this._animator.getClip(ANIM_DEAD).play()
+    }
+
     move(tilePath: Tile[]){
         Unit._listeners.forEach(listener => {
             if (listener.onMoveStart)listener.onMoveStart(this, tilePath[tilePath.length-1])
@@ -122,6 +162,8 @@ export class Unit extends Entity implements Tile.ITileableObject{
             path.push(tilePath[i].transform.position)
         }
 
+        this.playWalk()
+
         this._transform.lookAt(new Vector3(path[1].x, this._transform.position.y, path[1].z))
 
         this.tile.object = null
@@ -130,6 +172,7 @@ export class Unit extends Entity implements Tile.ITileableObject{
                 let targetTile = tilePath[tilePath.length-1]
                 targetTile.object = this
                 this.tile = targetTile
+                this.playIdle()
                 TurnManager.endAction()
             },
             (currentPosition, nextPosition)=>{
@@ -152,6 +195,13 @@ export class Unit extends Entity implements Tile.ITileableObject{
         Unit._listeners.forEach(listener => {
             if (listener.onHit)listener.onHit(attackInstance)
         });
+        this._currentHP -= attackInstance.totalDamage
+        if(this._currentHP <= 0){
+            this.kill()
+        }
+        else{
+            this.playHit()
+        }
     }
 
     kill(){
@@ -159,10 +209,19 @@ export class Unit extends Entity implements Tile.ITileableObject{
             if (listener.onDead)listener.onDead(this)
         });
 
+        this.tile.object = null
+        this.tile = null
+
+        this.playDead()
+        TimerSystem.instance.createTimer(ANIM_LENGTH,()=>{
+            this.removeUnit()
+        })
+    }
+
+    private removeUnit(){
         this.factionData.faction.removeUnit(this)
-        engine.removeSystem(this._lifeBarSystem)
         engine.removeSystem(this._stateMachine)
-        engine.removeEntity(this)
+        engine.removeEntity(this)        
     }
 }
 
@@ -177,6 +236,7 @@ export namespace Unit{
         attackRange: number
         health: number
         unitType: number
+        projectile?: IProjectileBehavior
     }
 
     export interface IProjectileBehavior{
@@ -191,40 +251,6 @@ export namespace Unit{
         onHit?(attackInstance: AttackManager.AttackInstance)
         onDead?(unit: Unit)
         onMoveStart?(unit: Unit, tile: Tile)
-    }
-}
-
-class LifeBar implements ISystem{
-    private _unit: Unit
-
-    private _barRoot: Entity
-    private _barBg: Entity
-
-    constructor(unit: Unit){
-        this._unit = unit
-
-        this._barRoot = new Entity()
-        this._barRoot.setParent(unit)
-        this._barRoot.addComponent(new BillBoardComponent())
-        this._barRoot.addComponent(new Transform())
-
-        const bgMaterial = new Material()
-        bgMaterial.disableLighting = true
-        bgMaterial.albedoColor = Color3.Black()
-
-        this._barBg = new Entity()
-        this._barBg.setParent(this._barRoot)
-        this._barBg.addComponent(bgMaterial)
-        this._barBg.addComponent(new PlaneShape())
-        this._barBg.addComponent(new Transform({position:new Vector3(0,0,-1), scale: new Vector3(1.5,0.2,1.5)}))
-    }
-
-    update(){
-        //TODO: update lifebar
-    }
-
-    deactivate(){
-        //TODO: remove lifebar?
     }
 }
 
@@ -295,16 +321,12 @@ class StateAttackEnemy extends UnitATKBaseState{
         this._time = 0
         this._hasAttacked = false
         this._projectileStarted = false
-            //TODO: start animation
+        this._currentUnit.playAttack()
     }
 
     onUpdate(dt: number): boolean{
         this._time += dt
-
-        if (this._time >= this._hitTime && !this._hasAttacked){
-            this._hasAttacked = true
-            this._targetUnit.hit(this._attkInstance)
-        }
+        
         if (this._projectile){
             if (!this._projectileStarted){
                 if (this._time >= this._projectile.startDelay()){
@@ -315,9 +337,19 @@ class StateAttackEnemy extends UnitATKBaseState{
             else if (!this._projectile.hasFinished()){
                 this._projectile.onUpdate(dt)
             }
+            else if (!this._hasAttacked){
+                this._hasAttacked = true
+                this._targetUnit.hit(this._attkInstance)
+            }
             return !(this._time >= this._animDuration && this._projectile.hasFinished())
         }
-        else return this._time < this._animDuration
+        else {
+            if (this._time >= this._hitTime && !this._hasAttacked){
+                this._hasAttacked = true
+                this._targetUnit.hit(this._attkInstance)
+            }
+            return this._time < this._animDuration
+        }
     }
 }
 
