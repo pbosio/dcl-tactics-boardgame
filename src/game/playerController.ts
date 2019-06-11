@@ -8,6 +8,7 @@ import { MoveUnitMessage } from "../messages/moveUnitMessage";
 import { BillBoardComponent } from "../modules/billboardComponent";
 import { AttackMessage } from "../messages/attackMessage";
 import { AttackManager } from "./attackManager";
+import { RestMessage } from "../messages/restMessage";
 
 export class PlayerController implements TurnManager.IOnTurnChangeListener, Tile.IOnClickListener{
     private _playerFaction: Faction
@@ -74,15 +75,18 @@ export class PlayerController implements TurnManager.IOnTurnChangeListener, Tile
         actionRest.addComponent(new PlaneShape())
         actionRest.addComponent(new Transform({position: new Vector3(0.2,actionDisplayerY,0), scale: new Vector3(0.2,0.2,0.2)}))
         actionRest.addComponent(actionRestMat)
+        actionRest.addComponent(new OnClick(event=>{
+            this.hideActions()
+            this._currentBehavior = this._noBehavior
+            MessageManager.send(new RestMessage(this._selectedUnit))
+        }))
 
         engine.removeEntity(this._actionsDisplayer)
         GridManager.addOnTileListener(this)
     }
 
     onTileClicked(tile: Tile) {
-        if (TurnManager.canPerfromAction()){
-            this._currentBehavior.onTileClicked(tile)
-        }
+        this._currentBehavior.onTileClicked(tile)
     }
 
     onTurnChanged(faction: Faction) {
@@ -97,8 +101,8 @@ export class PlayerController implements TurnManager.IOnTurnChangeListener, Tile
     private showActions(position: Vector3){
         if (!this._actionsDisplayer.isAddedToEngine()){
             engine.addEntity(this._actionsDisplayer)
-            this._actionsDisplayer.getComponent(Transform).position = position
         }
+        this._actionsDisplayer.getComponent(Transform).position = position
     }
 
     private hideActions(){
@@ -108,8 +112,9 @@ export class PlayerController implements TurnManager.IOnTurnChangeListener, Tile
     }
 
     private onUnitSelected(unit: Unit){
+        log("onUnitSelected " + unit)
+        this._selectedUnit = unit
         if (unit){
-            this._selectedUnit = unit
             this.showActions(unit.getTransform().position)
         }
         else{
@@ -119,7 +124,7 @@ export class PlayerController implements TurnManager.IOnTurnChangeListener, Tile
 
     private onMoveUnit(unit: Unit, tile: Tile){
         GridManager.clearPaintedTiles()
-        this._currentBehavior = this._noBehavior
+        this._currentBehavior = this._selectingUnitBehavior
         MessageManager.send(new MoveUnitMessage(unit.tile, tile))
     }
 
@@ -130,9 +135,11 @@ export class PlayerController implements TurnManager.IOnTurnChangeListener, Tile
     }
 
     private onCancelAction(){
+        log("onCancelAction")
         if (this._selectedUnit){
             this.showActions(this._selectedUnit.getTransform().position)
         }
+        this._currentBehavior = this._selectingUnitBehavior
         GridManager.clearPaintedTiles()
     }
 }
@@ -143,6 +150,7 @@ interface IPlayerBehavior{
 
 class NoneBehavior implements IPlayerBehavior{
     onTileClicked(tile: Tile) {
+        log("NoneBehavior onTileClicked")
     }
 }
 
@@ -156,7 +164,8 @@ class SelectingUnit implements IPlayerBehavior{
     }
 
     onTileClicked(tile: Tile) {
-        if (tile.object != null){
+        log("SelectingUnit onTileClicked " + TurnManager.canPerfromAction() + " " + tile.object != null)
+        if (TurnManager.canPerfromAction() && tile.object != null){
             if (tile.object instanceof Unit){
                 if (tile.object.factionData.faction == this._playerFaction){
                     this._onUnitSelected(tile.object)
@@ -185,7 +194,8 @@ class MoveUnitBehavior implements IPlayerBehavior{
     }
 
     onTileClicked(tile: Tile) {
-        if (this._tiles.indexOf(tile) != -1){
+        log("MoveUnitBehavior onTileClicked " + TurnManager.canPerfromAction() + " " + (this._tiles.indexOf(tile) != -1))
+        if (TurnManager.canPerfromAction() && this._tiles.indexOf(tile) != -1){
             this._onMoveCallback(this._selectedUnit, tile)
         }
         else{
@@ -211,7 +221,8 @@ class AttackUnitBehavior implements IPlayerBehavior{
     }
 
     onTileClicked(tile: Tile) {
-        if (this._tiles.indexOf(tile) != -1){
+        log("AttackUnitBehavior onTileClicked " + TurnManager.canPerfromAction() + " " + (this._tiles.indexOf(tile) != -1))
+        if (TurnManager.canPerfromAction() && this._tiles.indexOf(tile) != -1){
             this._onAttackCallback(this._selectedUnit, tile)
         }
         else{

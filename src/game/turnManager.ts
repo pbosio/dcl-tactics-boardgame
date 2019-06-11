@@ -1,4 +1,5 @@
 import { Faction } from "../unit/faction";
+import { TimerSystem } from "../modules/timerSystem";
 
 export class TurnManager{
     private static _factions: Faction[] = []
@@ -11,13 +12,22 @@ export class TurnManager{
     }
 
     static endTurn(){
-        //this._currentFactionId ++;
-        if (this._currentFactionId > this._factions.length){
-            this._currentFactionId = 0
-        }
-        this._onTurnChangedListeners.forEach(listener => {
-            listener.onTurnChanged(this._factions[this._currentFactionId]) 
-        });
+        //TODO: call change turn animation
+        //TODO: check unit left for win/lose condition
+        TimerSystem.instance.createTimer(2,()=>{
+            this._currentFactionId ++;
+            if (this._currentFactionId >= this._factions.length){
+                this._currentFactionId = 0
+            }
+            this._factions[this._currentFactionId].getUnits().forEach(unit => {
+                unit.resetTurn()
+            });
+            log("turn "+this._factions[this._currentFactionId].name)
+            this._onTurnChangedListeners.forEach(listener => {
+                listener.onTurnChanged(this._factions[this._currentFactionId]) 
+            });
+            this.endAction()
+        })
     }
 
     static addListener(listener: TurnManager.IOnTurnChangeListener){
@@ -30,7 +40,6 @@ export class TurnManager{
 
     static endAction(){
         this._isPerformingAction = false
-        this.endTurn()
     }
 
     static canPerfromAction(): boolean{

@@ -9,6 +9,7 @@ import { BillBoardComponentSystem } from "./modules/billboardComponent";
 import { AttackManager } from "./game/attackManager";
 import { TextPopup } from "./game/textPopup";
 import { LifeBarSystem } from "./game/lifebarSystem";
+import { AIController } from "./game/aiController";
 
 //*********************************
 //Projectiles' Behavior
@@ -135,6 +136,9 @@ TurnManager.addFaction(factionAI)
 const playerController = new PlayerController(factionPlayer)
 TurnManager.addListener(playerController)
 
+const aiController = new AIController(factionAI, factionPlayer)
+TurnManager.addListener(aiController)
+Unit.addListener(aiController)
 
 //*********************************
 //Create Systems

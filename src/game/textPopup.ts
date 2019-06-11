@@ -28,6 +28,12 @@ export class TextPopup implements Unit.IUnitListener{
         this.showText(attackInstance.totalDamage +" DMG",attackInstance.target.getGlobalPosition().add(Vector3.Up().scale(textOffsetY)),dmgColor)
     }
 
+    onRest(unit: Unit, hpRecovered: number){
+        if (hpRecovered > 0.01){
+            this.showText("REST: +" + hpRecovered + " HP",unit.getGlobalPosition().add(Vector3.Up().scale(textOffsetY)),Color3.Green())
+        }
+    }
+
     showText(value: string, position: Vector3, color: Color3 = Color3.White()){
         let text = this._availableTexts.pop()
         if (text == null){

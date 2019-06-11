@@ -32,7 +32,7 @@ export class GridManager implements Tile.IOnClickListener{
             if (n) neighbourList.push(n)
             n = GridManager.getTileByIndex(tile.indexX-1, tile.indexZ)
             if (n) neighbourList.push(n)
-            
+
             tile.aStar.neighbourList = neighbourList
         }
     }
@@ -69,6 +69,8 @@ export class GridManager implements Tile.IOnClickListener{
 
     static getTileByIndex(column: number, row: number): Tile{
         if (this._instance){
+            if(column < 0 || column >= this._instance.grid.width || row < 0 || row >= this._instance.grid.length) return null
+
             let tileID: number = column * this._instance.grid.length + row
 
             if(tileID<0 || tileID>=this._instance.grid.tileList.length) return null
@@ -95,7 +97,8 @@ export class GridManager implements Tile.IOnClickListener{
             let ret: Tile[] = []
             let tiles = this.getTilesWithinDistance(srcTile, dist, false)
             tiles.forEach(tile => {
-                let containEnemy = tile.object && tile.object instanceof Unit && tile.object.factionData.faction != (srcTile.object as Unit).factionData.faction
+                let containEnemy = tile.object && tile.object instanceof Unit && tile.object.factionData && 
+                    tile.object.factionData.faction != (srcTile.object as Unit).factionData.faction
                 if (containEnemy){
                     ret.push(tile)
                     tile.setMaterial(this._instance.config.tileMaterialHostile)
@@ -116,6 +119,10 @@ export class GridManager implements Tile.IOnClickListener{
                 tile.setMaterial(this._instance.config.tileMaterialDefault)
             });
         }
+    }
+
+    static getDistance(from: Tile, to: Tile, onlyWalkable: boolean = false){
+        return GridAStar.getDistance(from, to, onlyWalkable)
     }
 
     static getPath(originTile: Tile, destTile: Tile, onlyWalkeable: boolean = true): Tile[]{

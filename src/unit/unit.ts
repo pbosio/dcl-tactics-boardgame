@@ -5,6 +5,7 @@ import { FollowPathComponent, RotateTransformComponent } from "../modules/transf
 import { StateMachine } from "../modules/stateMachine";
 import { AttackManager } from "../game/attackManager";
 import { TimerSystem } from "../modules/timerSystem";
+import { TextPopup } from "../game/textPopup";
 
 const ANIM_IDLE = "idle"
 const ANIM_ATK = "attack"
@@ -25,6 +26,8 @@ export class Unit extends Entity implements Tile.ITileableObject{
 
     private _properties: Unit.UnitProperties
     private _currentHP: number
+    private _currentMoveRange: number
+
     private _stateMachine: StateMachine
 
     private _attackStates: UnitATKBaseState[] = []
@@ -65,6 +68,7 @@ export class Unit extends Entity implements Tile.ITileableObject{
         }
 
         this._currentHP = properties.health
+        this._currentMoveRange = properties.moveRange
 
         this._animator.addClip(new AnimationState(ANIM_IDLE,{looping: true}))
         this._animator.addClip(new AnimationState(ANIM_WALK,{looping: true}))
@@ -101,6 +105,10 @@ export class Unit extends Entity implements Tile.ITileableObject{
     }
 
     getMoveRange(): number{
+        return this._currentMoveRange
+    }
+
+    getFullMoveRange(): number{
         return this._properties.moveRange
     }
 
@@ -121,7 +129,7 @@ export class Unit extends Entity implements Tile.ITileableObject{
     }
 
     getMoveSpeed(): number{
-        return 1
+        return 3
     }
 
     getDamage(): number{
@@ -151,6 +159,8 @@ export class Unit extends Entity implements Tile.ITileableObject{
     }
 
     move(tilePath: Tile[]){
+        this._currentMoveRange = Scalar.Clamp(this._currentMoveRange - tilePath.length+1, 0, this.getFullMoveRange())
+
         Unit._listeners.forEach(listener => {
             if (listener.onMoveStart)listener.onMoveStart(this, tilePath[tilePath.length-1])
         });
@@ -174,6 +184,9 @@ export class Unit extends Entity implements Tile.ITileableObject{
                 this.tile = targetTile
                 this.playIdle()
                 TurnManager.endAction()
+                Unit._listeners.forEach(listener => {
+                    if (listener.onMoveEnd)listener.onMoveEnd(this, targetTile)
+                });
             },
             (currentPosition, nextPosition)=>{
                 this._transform.lookAt(new Vector3(nextPosition.x, this._transform.position.y, nextPosition.z))
@@ -204,6 +217,17 @@ export class Unit extends Entity implements Tile.ITileableObject{
         }
     }
 
+    rest(){
+        TurnManager.startAction()
+        let prevHP = this._currentHP
+        this._currentHP = Scalar.Clamp(this._currentHP + this._currentHP * 0.1, 0, this.getFullHP())
+        Unit._listeners.forEach(listener => {
+            if (listener.onRest)listener.onRest(this, this._currentHP - prevHP)
+        });
+        TurnManager.endTurn()
+        log("unit rest end turn")
+    }
+
     kill(){
         Unit._listeners.forEach(listener => {
             if (listener.onDead)listener.onDead(this)
@@ -211,6 +235,7 @@ export class Unit extends Entity implements Tile.ITileableObject{
 
         this.tile.object = null
         this.tile = null
+        this.factionData.faction.removeUnit(this)
 
         this.playDead()
         TimerSystem.instance.createTimer(ANIM_LENGTH,()=>{
@@ -218,8 +243,11 @@ export class Unit extends Entity implements Tile.ITileableObject{
         })
     }
 
+    resetTurn(){
+        this._currentMoveRange = this.getFullMoveRange()
+    }
+
     private removeUnit(){
-        this.factionData.faction.removeUnit(this)
         engine.removeSystem(this._stateMachine)
         engine.removeEntity(this)        
     }
@@ -251,6 +279,8 @@ export namespace Unit{
         onHit?(attackInstance: AttackManager.AttackInstance)
         onDead?(unit: Unit)
         onMoveStart?(unit: Unit, tile: Tile)
+        onMoveEnd?(unit: Unit, tile: Tile)
+        onRest?(unit: Unit, hpRecovered: number)
     }
 }
 
@@ -355,6 +385,7 @@ class StateAttackEnemy extends UnitATKBaseState{
 
 class StateEndAttack extends UnitATKBaseState{
     onStart(){
-        TurnManager.endAction()
+        TurnManager.endTurn()
+        log("unit attacked end turn")
     }
 }

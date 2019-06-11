@@ -36,6 +36,10 @@ export class Faction{
         return this._units[uid]
     }
 
+    getUnits(): Unit[]{
+        return this._units
+    }
+
     removeUnit(unit: Unit){
         this._units.splice(this._units.indexOf(unit),1)
     }

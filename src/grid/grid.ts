@@ -10,8 +10,8 @@ export class Grid extends Entity{
     tileList: Tile[] = []
 
     get transform(){return this._transform}
-    get width(){return this._width}
-    get length(){return this._length}
+    get width(): number {return this._width}
+    get length(): number {return this._length}
     get tileSize(){return this._tileSize}
     get tileSpacing(){return this._tileSpacing}
 
