@@ -12,7 +12,7 @@ export class Tile extends Entity{
     aStar: Tile.TileAStar
     distance: number
     aiWeight: number
-    debugText: TextShape
+    //debugText: TextShape
 
     constructor(x:number, z:number, tileSize: number){
         super("tile"+x+"-"+z)
@@ -26,10 +26,11 @@ export class Tile extends Entity{
         this.addComponent(new OnClick(()=>{
             this.selectTile()
         }))
-        const dbgEnt = new Entity()
+        /*const dbgEnt = new Entity()
         dbgEnt.setParent(this)
         this.debugText = new TextShape("0")
-        dbgEnt.addComponent(this.debugText)
+        this.debugText.fontSize = 3
+        dbgEnt.addComponent(this.debugText)*/
     }
 
     addOnClickListener(listener: Tile.IOnClickListener){

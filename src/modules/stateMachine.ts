@@ -1,5 +1,6 @@
 export class StateMachine implements ISystem{
     private currentState: StateMachine.State
+    private onFinishCallback: ()=>void = null
 
     /**
      * get current state
@@ -39,8 +40,15 @@ export class StateMachine implements ISystem{
                 if (temp.nextState){
                     this.setState(temp.nextState)
                 }
+                else if (this.onFinishCallback){
+                    this.onFinishCallback()
+                }
             }
         }
+    }
+
+    setFinishCallback(callback:()=>void){
+        this.onFinishCallback = callback
     }
 }
 

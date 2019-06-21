@@ -9,6 +9,7 @@ import { BillBoardComponent } from "../modules/billboardComponent";
 import { AttackMessage } from "../messages/attackMessage";
 import { AttackManager } from "./attackManager";
 import { RestMessage } from "../messages/restMessage";
+import { HintUI } from "../screens/hintUI";
 
 export class PlayerController implements TurnManager.IOnTurnChangeListener, Tile.IOnClickListener{
     private _playerFaction: Faction
@@ -46,9 +47,9 @@ export class PlayerController implements TurnManager.IOnTurnChangeListener, Tile
         this._actionsDisplayer = new Entity()
         this._actionsDisplayer.addComponent(new BillBoardComponent())
         this._actionsDisplayer.addComponent(new Transform())
-        this._actionsDisplayer.setParent(GridManager.getGrid())
+        //this._actionsDisplayer.setParent(GridManager.getGrid())
 
-        const actionAttack = new Entity()
+        const actionAttack = new Entity("attackButton")
         actionAttack.setParent(this._actionsDisplayer)
         actionAttack.addComponent(new PlaneShape())
         actionAttack.addComponent(new Transform({position: new Vector3(-0.2,actionDisplayerY,0), scale: new Vector3(0.2,0.2,0.2)}))
@@ -59,7 +60,7 @@ export class PlayerController implements TurnManager.IOnTurnChangeListener, Tile
             this._currentBehavior = this._attackBehavior
         }))
 
-        const actionMove = new Entity()
+        const actionMove = new Entity("moveButton")
         actionMove.setParent(this._actionsDisplayer)
         actionMove.addComponent(new PlaneShape())
         actionMove.addComponent(new Transform({position: new Vector3(0,actionDisplayerY,0), scale: new Vector3(0.2,0.2,0.2)}))
@@ -70,7 +71,7 @@ export class PlayerController implements TurnManager.IOnTurnChangeListener, Tile
             this._currentBehavior = this._moveBehavior
         }))
 
-        const actionRest = new Entity()
+        const actionRest = new Entity("restButton")
         actionRest.setParent(this._actionsDisplayer)
         actionRest.addComponent(new PlaneShape())
         actionRest.addComponent(new Transform({position: new Vector3(0.2,actionDisplayerY,0), scale: new Vector3(0.2,0.2,0.2)}))
@@ -81,8 +82,12 @@ export class PlayerController implements TurnManager.IOnTurnChangeListener, Tile
             MessageManager.send(new RestMessage(this._selectedUnit))
         }))
 
-        engine.removeEntity(this._actionsDisplayer)
+        engine.addEntity(this._actionsDisplayer)
+
         GridManager.addOnTileListener(this)
+
+        this.hideActions()
+        HintUI.ShowHint("Select a UNIT")
     }
 
     onTileClicked(tile: Tile) {
@@ -92,6 +97,7 @@ export class PlayerController implements TurnManager.IOnTurnChangeListener, Tile
     onTurnChanged(faction: Faction) {
         if (faction == this._playerFaction){
             this._currentBehavior = this._selectingUnitBehavior
+            HintUI.ShowHint("Select a UNIT")
         }
         else{
             this._currentBehavior = this._noBehavior
@@ -99,26 +105,34 @@ export class PlayerController implements TurnManager.IOnTurnChangeListener, Tile
     }
 
     private showActions(position: Vector3){
-        if (!this._actionsDisplayer.isAddedToEngine()){
+        log("showActions")
+        HintUI.ShowHint("Choose an action. Rest or Attack finish your turn")
+        /*if (!this._actionsDisplayer.isAddedToEngine()){
+            log("showActions engine.addEntity")
             engine.addEntity(this._actionsDisplayer)
-        }
+        }*/
         this._actionsDisplayer.getComponent(Transform).position = position
     }
 
     private hideActions(){
-        if (this._actionsDisplayer.isAddedToEngine()){
+        log("hideActions")
+        HintUI.ShowHint("")
+        /*if (this._actionsDisplayer.isAddedToEngine()){
+            log("hideActions engine.removeEntity")
             engine.removeEntity(this._actionsDisplayer)
-        }
+        }*/
+        this._actionsDisplayer.getComponent(Transform).position.y = -1
     }
 
     private onUnitSelected(unit: Unit){
         log("onUnitSelected " + unit)
         this._selectedUnit = unit
         if (unit){
-            this.showActions(unit.getTransform().position)
+            this.showActions(unit.getGlobalPosition())
         }
         else{
             this.hideActions()
+            HintUI.ShowHint("Select a UNIT")
         }
     }
 
@@ -137,7 +151,10 @@ export class PlayerController implements TurnManager.IOnTurnChangeListener, Tile
     private onCancelAction(){
         log("onCancelAction")
         if (this._selectedUnit){
-            this.showActions(this._selectedUnit.getTransform().position)
+            this.showActions(this._selectedUnit.getGlobalPosition())
+        }
+        else{
+            HintUI.ShowHint("Select a UNIT")
         }
         this._currentBehavior = this._selectingUnitBehavior
         GridManager.clearPaintedTiles()
@@ -191,6 +208,7 @@ class MoveUnitBehavior implements IPlayerBehavior{
     start(selectedUnit: Unit){
         this._tiles = GridManager.getAndPaintTilesForMove(selectedUnit.tile, selectedUnit.getMoveRange())
         this._selectedUnit = selectedUnit
+        HintUI.ShowHint("Select a TILE to move to it")
     }
 
     onTileClicked(tile: Tile) {
@@ -218,6 +236,7 @@ class AttackUnitBehavior implements IPlayerBehavior{
     start(selectedUnit: Unit){
         this._tiles = GridManager.getAndPaintTilesForAttack(selectedUnit.tile, selectedUnit.getAttakRange())
         this._selectedUnit = selectedUnit
+        HintUI.ShowHint("Select an ENEMY within range to attack")
     }
 
     onTileClicked(tile: Tile) {

@@ -10,44 +10,9 @@ import { AttackManager } from "./game/attackManager";
 import { TextPopup } from "./game/textPopup";
 import { LifeBarSystem } from "./game/lifebarSystem";
 import { AIController } from "./game/aiController";
+import { TurnChangeScreen } from "./screens/turnChangeScreen";
+import { HintUI } from "./screens/hintUI";
 
-//*********************************
-//Projectiles' Behavior
-//*********************************
-class ArrowProjectile implements Unit.IProjectileBehavior{
-    private _entity: Entity
-    private _hasFinish: boolean = true
-
-    constructor(shape: Shape, scale: Vector3, grid: Grid){
-        this._entity = new Entity()
-        this._entity.addComponent(shape)
-        this._entity.addComponent(new Transform({scale:scale}))
-        this._entity.setParent(grid)
-        engine.removeEntity(this._entity)
-    }
-
-    onStart(attaker: Unit, target: Unit) {
-        engine.addEntity(this._entity)
-
-        let srcPosition = attaker.getTransform().position.add(Vector3.Up().scale(0.3))
-        let tgtPosition = target.getTransform().position.add(Vector3.Up().scale(0.3))
-
-        this._entity.addComponent(new MoveTransformComponent(srcPosition, tgtPosition,
-            Vector3.DistanceSquared(srcPosition, tgtPosition) * 0.5,()=> {
-                this._hasFinish = true
-                engine.removeEntity(this._entity)
-            }))
-        this._hasFinish = false
-    }    
-    onUpdate(dt: number) {
-    }
-    hasFinished(): boolean {
-        return this._hasFinish
-    }
-    startDelay(): number {
-        return 0.5
-    }
-}
 
 //*********************************
 //Create Grid & Grid Manager
@@ -66,6 +31,56 @@ gridConfig.tileMaterialWalkeable.albedoTexture = new Texture("images/tile/walkea
 gridConfig.tileMaterialHostile.albedoTexture = new Texture("images/tile/hostile.jpg")
 
 const gridManager = new GridManager(grid,gridConfig)
+
+//*********************************
+//Projectiles' Behavior
+//*********************************
+class ArrowProjectile implements Unit.IProjectileBehavior{
+    private _entity: Entity
+    private _hasFinish: boolean = true
+
+    private readonly gravity = 0.1
+
+    constructor(shape: Shape, scale: Vector3, grid: Grid){
+        this._entity = new Entity()
+        this._entity.addComponent(shape)
+        this._entity.addComponent(new Transform({scale:scale}))
+        this._entity.setParent(grid)
+        engine.removeEntity(this._entity)
+    }
+
+    onStart(attaker: Unit, target: Unit) {
+        engine.addEntity(this._entity)
+
+        let speed = attaker.getAttakRange() * grid.tileSize * 0.25
+
+        let srcPosition = attaker.getTransform().position.add(Vector3.Up().scale(0.3))
+        let tgtPosition = target.getTransform().position.add(Vector3.Up().scale(0.3))
+
+        let offset = tgtPosition.subtract(srcPosition)
+        let dir = offset.normalizeToNew()
+        let dist = offset.length()
+
+        //let angle = Math.asin((dist * this.gravity)/(speed * speed)) * 0.5
+
+        this._entity.addComponent(new MoveTransformComponent(srcPosition, tgtPosition,
+            Vector3.DistanceSquared(srcPosition, tgtPosition) * 0.5,()=> {
+                this._hasFinish = true
+                engine.removeEntity(this._entity)
+            }))
+        this._hasFinish = false
+    }    
+    onUpdate(dt: number) {
+
+    }
+
+    hasFinished(): boolean {
+        return this._hasFinish
+    }
+    startDelay(): number {
+        return 0.5
+    }
+}
 
 //*********************************
 //Define Unit Types & Bonuses
@@ -117,7 +132,7 @@ GridManager.addToGrid(archerAI, GridManager.getTileByIndex(7,5))
 //*********************************
 //Create Factions & Controllers
 //*********************************
-const factionPlayer = new Faction("player")
+const factionPlayer = new Faction("Player")
 const factionAI = new Faction("AI")
 
 factionPlayer.addUnit(horsePlayer)
@@ -139,6 +154,16 @@ TurnManager.addListener(playerController)
 const aiController = new AIController(factionAI, factionPlayer)
 TurnManager.addListener(aiController)
 Unit.addListener(aiController)
+
+
+//*********************************
+//UI
+//*********************************
+const gameCanvas = new UICanvas()
+gameCanvas.visible = true
+
+TurnChangeScreen.Create(gameCanvas)
+HintUI.Create(gameCanvas)
 
 //*********************************
 //Create Systems

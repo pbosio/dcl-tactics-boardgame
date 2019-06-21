@@ -1,5 +1,6 @@
 import { Faction } from "../unit/faction";
 import { TimerSystem } from "../modules/timerSystem";
+import { TurnChangeScreen } from "../screens/turnChangeScreen";
 
 export class TurnManager{
     private static _factions: Faction[] = []
@@ -12,9 +13,8 @@ export class TurnManager{
     }
 
     static endTurn(){
-        //TODO: call change turn animation
         //TODO: check unit left for win/lose condition
-        TimerSystem.instance.createTimer(2,()=>{
+        TurnChangeScreen.Show(this.getNextFaction().name + "\'s Turn",()=>{
             this._currentFactionId ++;
             if (this._currentFactionId >= this._factions.length){
                 this._currentFactionId = 0
@@ -44,6 +44,15 @@ export class TurnManager{
 
     static canPerfromAction(): boolean{
         return !this._isPerformingAction
+    }
+
+    static getNextFaction(): Faction{
+        let current = this._currentFactionId
+        current++
+        if (current >= this._factions.length){
+            current = 0
+        }
+        return this._factions[current]
     }
 
     private constructor(){

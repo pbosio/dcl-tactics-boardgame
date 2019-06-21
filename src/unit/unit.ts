@@ -84,20 +84,18 @@ export class Unit extends Entity implements Tile.ITileableObject{
     }
 
     getGlobalPosition(): Vector3{
-        return Unit.getEntityGlobalPosition(this)
+        return Unit.getEntityWorldPosition(this)
     }
 
-    private static getEntityGlobalPosition(entity: IEntity) : Vector3{
-        if (entity.hasComponent(Transform)){
-            if (entity.getParent() != null){
-                let parent = entity.getParent()
-                if (parent.hasComponent(Transform)){
-                    return this.getEntityGlobalPosition(parent).add(entity.getComponent(Transform).position.rotate(parent.getComponent(Transform).rotation))
-                }
-            }
-            return entity.getComponent(Transform).position
+    private static getEntityWorldPosition(entity: IEntity): Vector3{
+        let entityPosition = entity.hasComponent(Transform)? entity.getComponent(Transform).position : Vector3.Zero()
+
+        if (entity.getParent() != null){
+            let parentEntity = entity.getParent()
+            let parentRotation = parentEntity.hasComponent(Transform)? parentEntity.getComponent(Transform).rotation : Quaternion.Identity
+            return this.getEntityWorldPosition(parentEntity).add(entityPosition.rotate(parentRotation))
         }
-        return Vector3.Zero()
+        return entityPosition
     }
 
     getEntity(): IEntity{
@@ -134,6 +132,10 @@ export class Unit extends Entity implements Tile.ITileableObject{
 
     getDamage(): number{
         return 1
+    }
+
+    getAtkIgnoresPath(): boolean{
+        return this._properties.attackIgnorePath
     }
 
     playIdle(){
@@ -264,6 +266,7 @@ export namespace Unit{
         attackRange: number
         health: number
         unitType: number
+        attackIgnorePath?: boolean = false
         projectile?: IProjectileBehavior
     }
 

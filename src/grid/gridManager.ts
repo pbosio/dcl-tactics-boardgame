@@ -95,7 +95,8 @@ export class GridManager implements Tile.IOnClickListener{
     static getAndPaintTilesForAttack(srcTile: Tile, dist: number): Tile[]{
         if (this._instance){
             let ret: Tile[] = []
-            let tiles = this.getTilesWithinDistance(srcTile, dist, false)
+            let srcUnit = srcTile.object? srcTile.object as Unit : null
+            let tiles = this.getTilesWithinDistance(srcTile, dist, srcUnit? !srcUnit.getAtkIgnoresPath() : false)
             tiles.forEach(tile => {
                 let containEnemy = tile.object && tile.object instanceof Unit && tile.object.factionData && 
                     tile.object.factionData.faction != (srcTile.object as Unit).factionData.faction

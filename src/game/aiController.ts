@@ -8,6 +8,7 @@ import { MessageManager } from "../messages/messageManager";
 import { MoveUnitMessage } from "../messages/moveUnitMessage";
 import { AttackMessage } from "../messages/attackMessage";
 import { RestMessage } from "../messages/restMessage";
+import { HintUI } from "../screens/hintUI";
 
 export class AIController implements TurnManager.IOnTurnChangeListener, Unit.IUnitListener{
  
@@ -25,6 +26,7 @@ export class AIController implements TurnManager.IOnTurnChangeListener, Unit.IUn
         this._actionsList = null
 
         if (faction == this._aiFaction){
+            HintUI.ShowHint("It's " + this._aiFaction.name+"'s Turn")
             this.resetWeights()
             this.weightPlayerAtkTile()
             this._actionsList = this.sortActions(this.weightAIMove())
@@ -85,22 +87,26 @@ export class AIController implements TurnManager.IOnTurnChangeListener, Unit.IUn
     private resetWeights(){
         GridManager.getGrid().tileList.forEach(tile => {
             tile.aiWeight = 0
-            tile.debugText.value = "0"
+            //tile.debugText.value = "0"
         });
     }
 
     private weightPlayerAtkTile(){
+        let processedTiles: Tile[] = []
+
         this._playerFaction.getUnits().forEach(unit => {
             GridManager.getTilesWithinDistance(unit.tile, unit.getFullMoveRange(), true).forEach(moveTile => {
-                this.weightPlayerUnitAtkTile(moveTile, unit)
+                GridManager.getTilesWithinDistance(moveTile, unit.getAttakRange(), !unit.getAtkIgnoresPath()).forEach(tile => {
+                    if (processedTiles.indexOf(tile) < 0){
+                        processedTiles.push(tile)
+                        tile.aiWeight -= 1
+                    }
+                    else{
+                        tile.aiWeight -= 0.1
+                    }
+                    //tile.debugText.value = tile.aiWeight.toFixed(2)
+                });
             });
-        });
-    }
-
-    private weightPlayerUnitAtkTile(fromTile: Tile, unit: Unit){
-        GridManager.getTilesWithinDistance(fromTile, unit.getAttakRange(), false).forEach(tile => {
-            tile.aiWeight -= 1
-            tile.debugText.value = tile.aiWeight.toString()
         });
     }
 
@@ -156,7 +162,7 @@ class AIAction{
 
         let maxWeight = Number.NEGATIVE_INFINITY
         let heaviestAtk: Unit = null
-        GridManager.getTilesWithinDistance(fromTile, unit.getAttakRange(), false).forEach(tile => {
+        GridManager.getTilesWithinDistance(fromTile, unit.getAttakRange(), !unit.getAtkIgnoresPath()).forEach(tile => {
             let tempWeight = this.weight
 
             if (tile.object != null){
