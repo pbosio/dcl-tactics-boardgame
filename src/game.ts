@@ -4,7 +4,7 @@ import { Unit } from "./unit/unit";
 import { Faction } from "./unit/faction";
 import { TurnManager } from "./game/turnManager";
 import { PlayerController } from "./game/playerController";
-import { TransformSystem, MoveTransformComponent } from "./modules/transfromSystem";
+import { TransformSystem } from "./modules/transfromSystem";
 import { BillBoardComponentSystem } from "./modules/billboardComponent";
 import { AttackManager } from "./game/attackManager";
 import { TextPopup } from "./game/textPopup";
@@ -12,6 +12,8 @@ import { LifeBarSystem } from "./game/lifebarSystem";
 import { AIController } from "./game/aiController";
 import { TurnChangeScreen } from "./screens/turnChangeScreen";
 import { HintUI } from "./screens/hintUI";
+import { ArrowProjectile } from "./unit/projectileArrow";
+import { GameOverScreen } from "./screens/gameoverScreen";
 
 
 //*********************************
@@ -35,52 +37,7 @@ const gridManager = new GridManager(grid,gridConfig)
 //*********************************
 //Projectiles' Behavior
 //*********************************
-class ArrowProjectile implements Unit.IProjectileBehavior{
-    private _entity: Entity
-    private _hasFinish: boolean = true
-
-    private readonly gravity = 0.1
-
-    constructor(shape: Shape, scale: Vector3, grid: Grid){
-        this._entity = new Entity()
-        this._entity.addComponent(shape)
-        this._entity.addComponent(new Transform({scale:scale}))
-        this._entity.setParent(grid)
-        engine.removeEntity(this._entity)
-    }
-
-    onStart(attaker: Unit, target: Unit) {
-        engine.addEntity(this._entity)
-
-        let speed = attaker.getAttakRange() * grid.tileSize * 0.25
-
-        let srcPosition = attaker.getTransform().position.add(Vector3.Up().scale(0.3))
-        let tgtPosition = target.getTransform().position.add(Vector3.Up().scale(0.3))
-
-        let offset = tgtPosition.subtract(srcPosition)
-        let dir = offset.normalizeToNew()
-        let dist = offset.length()
-
-        //let angle = Math.asin((dist * this.gravity)/(speed * speed)) * 0.5
-
-        this._entity.addComponent(new MoveTransformComponent(srcPosition, tgtPosition,
-            Vector3.DistanceSquared(srcPosition, tgtPosition) * 0.5,()=> {
-                this._hasFinish = true
-                engine.removeEntity(this._entity)
-            }))
-        this._hasFinish = false
-    }    
-    onUpdate(dt: number) {
-
-    }
-
-    hasFinished(): boolean {
-        return this._hasFinish
-    }
-    startDelay(): number {
-        return 0.5
-    }
-}
+const arrowBehavior = new ArrowProjectile(new GLTFShape("models/arrow.glb"), new Vector3(0.5,0.5,0.5), grid)
 
 //*********************************
 //Define Unit Types & Bonuses
@@ -91,6 +48,12 @@ AttackManager.addBonus(UnitTypes.PIKES, UnitTypes.CHIVALRY, 0.7)
 AttackManager.addBonus(UnitTypes.ARCHERS, UnitTypes.CHIVALRY, 0.3)
 AttackManager.addBonus(UnitTypes.INFANTRY, UnitTypes.ARCHERS, 0.1)
 AttackManager.addBonus(UnitTypes.ARCHERS, UnitTypes.INFANTRY, -0.6)
+
+const unitStatsChivalry = {attackRange: 1, moveRange: 4, health: 6, unitType: UnitTypes.CHIVALRY}
+const unitStatsSoldier = {attackRange: 1, moveRange: 1, health: 10, unitType: UnitTypes.INFANTRY}
+const unitStatsPike = {attackRange: 2, moveRange: 2, health: 4, unitType: UnitTypes.PIKES}
+const unitStatsArcher = {attackRange: 8, moveRange: 2, health: 2, unitType: UnitTypes.ARCHERS, projectile: arrowBehavior}
+//const unitStatsArcher = {attackRange: 5, moveRange: 2, health: 2, unitType: UnitTypes.ARCHERS, projectile: arrowBehavior}
 
 //*********************************
 //Load Units' Meshes
@@ -107,17 +70,15 @@ const soldierShape_black = new GLTFShape("models/soldier_black.glb")
 //*********************************
 //Create Units
 //*********************************
-const arrowBehavior = new ArrowProjectile(new BoxShape(), new Vector3(0.1,0.1,0.1), grid)
+const horsePlayer = new Unit(knightShape_white, unitStatsChivalry)
+const soldierPlayer = new Unit(soldierShape_white, unitStatsSoldier)
+const pikePlayer = new Unit(pikeShape_white, unitStatsPike)
+const archerPlayer = new Unit(archerShape_white, unitStatsArcher)
 
-const horsePlayer = new Unit(knightShape_white, {attackRange: 1, moveRange: 4, health: 6, unitType: UnitTypes.CHIVALRY})
-const soldierPlayer = new Unit(soldierShape_white, {attackRange: 1, moveRange: 1, health: 10, unitType: UnitTypes.INFANTRY})
-const pikePlayer = new Unit(pikeShape_white, {attackRange: 2, moveRange: 2, health: 4, unitType: UnitTypes.PIKES})
-const archerPlayer = new Unit(archerShape_white, {attackRange: 5, moveRange: 2, health: 2, unitType: UnitTypes.ARCHERS, projectile: arrowBehavior})
-
-const horseAI = new Unit(knightShape_black, {attackRange: 1, moveRange: 4, health: 6, unitType: UnitTypes.CHIVALRY})
-const soldierAI = new Unit(soldierShape_black, {attackRange: 1, moveRange: 1, health: 10, unitType: UnitTypes.INFANTRY})
-const pikeAI = new Unit(pikeShape_black, {attackRange: 2, moveRange: 2, health: 4, unitType: UnitTypes.PIKES})
-const archerAI = new Unit(archerShape_black, {attackRange: 5, moveRange: 2, health: 2, unitType: UnitTypes.ARCHERS, projectile: arrowBehavior})
+const horseAI = new Unit(knightShape_black, unitStatsChivalry)
+const soldierAI = new Unit(soldierShape_black, unitStatsSoldier)
+const pikeAI = new Unit(pikeShape_black, unitStatsPike)
+const archerAI = new Unit(archerShape_black, unitStatsArcher)
 
 GridManager.addToGrid(horsePlayer, GridManager.getTileByIndex(0,2))
 GridManager.addToGrid(soldierPlayer, GridManager.getTileByIndex(0,3))
@@ -157,13 +118,14 @@ Unit.addListener(aiController)
 
 
 //*********************************
-//UI
+//UI∫
 //*********************************
 const gameCanvas = new UICanvas()
 gameCanvas.visible = true
 
 TurnChangeScreen.Create(gameCanvas)
 HintUI.Create(gameCanvas)
+GameOverScreen.Create(gameCanvas, null)
 
 //*********************************
 //Create Systems

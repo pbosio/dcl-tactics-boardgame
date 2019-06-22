@@ -1,10 +1,11 @@
 import { StateMachine } from "../modules/stateMachine";
+import { HintUI } from "./hintUI";
 
 export class TurnChangeScreen{
 
     private static _instance: TurnChangeScreen = null
 
-    private _bannerState: ShowBannerState
+    private _bannerState: StateMachine.State
     private _textState: ShowTextState
 
     private _bannerStateMachine: StateMachine
@@ -30,11 +31,12 @@ export class TurnChangeScreen{
         banner.visible = false
         text.visible = false
 
-        this._bannerState = new ShowBannerState(1, banner)
-        this._textState = new ShowTextState(1, 4,text)
+        this._bannerState = new WaitBannerState(2)
+        this._textState = new ShowTextState(3, 6,text)
 
-        this._bannerState.nextState = new WaitBannerState(3)
-        this._bannerState.nextState.nextState = new HideBannerState(1, banner)
+        this._bannerState.nextState = new ShowBannerState(1, banner)
+        this._bannerState.nextState.nextState = new WaitBannerState(3)
+        this._bannerState.nextState.nextState.nextState = new HideBannerState(1, banner)
 
         this._bannerStateMachine = new StateMachine()
         engine.addSystem(this._bannerStateMachine)
@@ -57,6 +59,7 @@ export class TurnChangeScreen{
             this._instance._textStateMachine.setState(this._instance._textState)
 
             this._instance._bannerStateMachine.setFinishCallback(onFinish)
+            HintUI.ShowHint("")
         }
     }
 

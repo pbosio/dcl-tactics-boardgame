@@ -135,7 +135,9 @@ export class Unit extends Entity implements Tile.ITileableObject{
     }
 
     getAtkIgnoresPath(): boolean{
-        return this._properties.attackIgnorePath
+        //No time to fix this so it well be always true
+        //return this._properties.attackIgnorePath
+        return true
     }
 
     playIdle(){
@@ -266,7 +268,7 @@ export namespace Unit{
         attackRange: number
         health: number
         unitType: number
-        attackIgnorePath?: boolean = false
+        attackIgnorePath?: boolean = true //No time to fix this. So we will ignore it
         projectile?: IProjectileBehavior
     }
 
@@ -374,7 +376,7 @@ class StateAttackEnemy extends UnitATKBaseState{
                 this._hasAttacked = true
                 this._targetUnit.hit(this._attkInstance)
             }
-            return !(this._time >= this._animDuration && this._projectile.hasFinished())
+            return !(this._time >= this._animDuration && this._projectile.hasFinished() && this._hasAttacked)
         }
         else {
             if (this._time >= this._hitTime && !this._hasAttacked){
