@@ -3,8 +3,10 @@ import { Unit } from "./unit";
 export class Faction{
     private _name: string
     private _units: Unit[] = []
+    private _isLocal: boolean
 
     get name(): string{return this._name}
+    get isLocal(): boolean{return this._isLocal}
 
     private static _factions: Faction[] = []
     static getFaction(factionName: string){
@@ -22,8 +24,9 @@ export class Faction{
         return ret
     }
 
-    constructor(factionName: string){
+    constructor(factionName: string, isLocalPlayer: boolean){
         this._name = factionName
+        this._isLocal = isLocalPlayer
         Faction._factions.push(this)
     }
 
@@ -42,6 +45,10 @@ export class Faction{
 
     removeUnit(unit: Unit){
         this._units.splice(this._units.indexOf(unit),1)
+    }
+
+    reset(){
+        this._units = []
     }
 }
 

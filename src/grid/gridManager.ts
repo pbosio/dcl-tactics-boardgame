@@ -105,7 +105,7 @@ export class GridManager implements Tile.IOnClickListener{
                     tile.setMaterial(this._instance.config.tileMaterialHostile)
                 }
                 else{
-                    tile.setMaterial(this._instance.config.tileMaterialWalkeable)
+                    tile.setMaterial(this._instance.config.tileMaterialHostileRange)
                 }
             });
             this._instance._paintedTiles = tiles
@@ -188,6 +188,7 @@ export namespace GridManager{
         tileMaterialDefault: Material
         tileMaterialWalkeable: Material
         tileMaterialHostile: Material
+        tileMaterialHostileRange: Material
     }
 }
 

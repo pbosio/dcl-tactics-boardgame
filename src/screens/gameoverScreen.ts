@@ -67,7 +67,7 @@ export class GameOverScreen{
 
     static Show(localWin: boolean, turns: number){
         if (this._instance){
-            this._instance._titleText.value = localWin? "YOU WIN!" : "GAME OVER!"
+            this._instance._titleText.value = localWin? "YOU WIN!" : "LOOSER!"
             this._instance._turnsText.value = "Turns played: "+turns
             this._instance._container.visible = true
         }

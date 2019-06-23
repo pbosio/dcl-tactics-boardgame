@@ -2,7 +2,7 @@ import { Unit } from "../unit/unit";
 import { AttackManager } from "./attackManager";
 import { StateMachine } from "../modules/stateMachine";
 import { MoveTransformComponent, TransformSystem, ScaleTransformComponent } from "../modules/transfromSystem";
-import { BillBoardComponent } from "../modules/billboardComponent";
+import { BillBoardComponent, billboardTransform } from "../modules/billboardComponent";
 
 const textOffsetY = 0.4
 
@@ -11,6 +11,8 @@ export class TextPopup implements Unit.IUnitListener{
     private _availableTexts: PopupableText[] = []
     private _stateMachine: StateMachine
     private _lastState: StatePopupText
+
+    private readonly _numbersMultiplier = 10
 
     constructor(){
         this._stateMachine = new StateMachine()
@@ -21,16 +23,18 @@ export class TextPopup implements Unit.IUnitListener{
         const dmgColor = Color3.Red()
 
         if (attackInstance.bonusDamage > 0.5) this.showText("Super-Effective!",attackInstance.target.getGlobalPosition().add(Vector3.Up().scale(textOffsetY)),dmgColor)       
-        else if (attackInstance.bonusDamage > 0) this.showText("Effective!",attackInstance.target.getGlobalPosition().add(Vector3.Up().scale(textOffsetY)),dmgColor)       
-        else if (attackInstance.bonusDamage < 0.5) this.showText("Super-Weak!",attackInstance.target.getGlobalPosition().add(Vector3.Up().scale(textOffsetY)),dmgColor)
-        else if (attackInstance.bonusDamage < 0) this.showText("Weak!",attackInstance.target.getGlobalPosition().add(Vector3.Up().scale(textOffsetY)),dmgColor)
+        else if (attackInstance.bonusDamage > 0.2) this.showText("Effective!",attackInstance.target.getGlobalPosition().add(Vector3.Up().scale(textOffsetY)),dmgColor)       
+        else if (attackInstance.bonusDamage < -0.5) this.showText("Super-Weak!",attackInstance.target.getGlobalPosition().add(Vector3.Up().scale(textOffsetY)),dmgColor)
+        else if (attackInstance.bonusDamage < -0.2) this.showText("Weak!",attackInstance.target.getGlobalPosition().add(Vector3.Up().scale(textOffsetY)),dmgColor)
 
-        this.showText(attackInstance.totalDamage +" DMG",attackInstance.target.getGlobalPosition().add(Vector3.Up().scale(textOffsetY)),dmgColor)
+        this.showText((attackInstance.totalDamage * this._numbersMultiplier).toFixed(0) +" DMG",
+            attackInstance.target.getGlobalPosition().add(Vector3.Up().scale(textOffsetY)),dmgColor)
     }
 
     onRest(unit: Unit, hpRecovered: number){
-        if (hpRecovered > 0.01){
-            this.showText("REST: +" + hpRecovered + " HP",unit.getGlobalPosition().add(Vector3.Up().scale(textOffsetY)),Color3.Green())
+        if ((hpRecovered * this._numbersMultiplier) >= 1){
+            this.showText("REST: +" + (hpRecovered * this._numbersMultiplier).toFixed(0) + " HP",
+                unit.getGlobalPosition().add(Vector3.Up().scale(textOffsetY)),Color3.Green())
         }
     }
 
@@ -40,9 +44,12 @@ export class TextPopup implements Unit.IUnitListener{
             text = new PopupableText()
             text.addComponent(new BillBoardComponent())
         }
-        text.transform.position = position
+        
         text.shape.value = value
         text.shape.color = color
+
+        text.transform.position = position
+        billboardTransform(text.transform)
 
         let showTextState = new StatePopupText(text, (txtData)=> this.onTextPopupFinished(txtData))
 
@@ -71,7 +78,7 @@ class PopupableText extends Entity{
         super()
         this.transform = new Transform()
         this.shape = new TextShape()
-        this.shape.fontSize = 5
+        this.shape.fontSize = 2
         this.addComponent(this.shape)
         this.addComponent(this.transform)
     }

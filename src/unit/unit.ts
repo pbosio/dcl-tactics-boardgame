@@ -6,6 +6,7 @@ import { StateMachine } from "../modules/stateMachine";
 import { AttackManager } from "../game/attackManager";
 import { TimerSystem } from "../modules/timerSystem";
 import { TextPopup } from "../game/textPopup";
+import { HitParticle } from "./hitParticle";
 
 const ANIM_IDLE = "idle"
 const ANIM_ATK = "attack"
@@ -76,6 +77,14 @@ export class Unit extends Entity implements Tile.ITileableObject{
         this._animator.addClip(new AnimationState(ANIM_HIT))
         this._animator.addClip(new AnimationState(ANIM_DEAD))
 
+        this.playIdle()
+    }
+
+    reset(){
+        if (this.tile) this.tile.object = null
+        this.tile = null
+        this._currentHP = this._properties.health
+        this._currentMoveRange = this._properties.moveRange
         this.playIdle()
     }
 
@@ -212,6 +221,7 @@ export class Unit extends Entity implements Tile.ITileableObject{
         Unit._listeners.forEach(listener => {
             if (listener.onHit)listener.onHit(attackInstance)
         });
+        HitParticle.show(this)
         this._currentHP -= attackInstance.totalDamage
         if(this._currentHP <= 0){
             this.kill()
@@ -223,10 +233,11 @@ export class Unit extends Entity implements Tile.ITileableObject{
 
     rest(){
         TurnManager.startAction()
-        let prevHP = this._currentHP
-        this._currentHP = Scalar.Clamp(this._currentHP + this._currentHP * 0.1, 0, this.getFullHP())
+        const addHP = this.getFullHP() * 0.1
+        const prevHP = this.getHP()
+        this._currentHP = Scalar.Clamp(this._currentHP + addHP, 0, this.getFullHP())
         Unit._listeners.forEach(listener => {
-            if (listener.onRest)listener.onRest(this, this._currentHP - prevHP)
+            if (listener.onRest)listener.onRest(this, this.getHP() - prevHP)
         });
         TurnManager.endTurn()
         log("unit rest end turn")
@@ -252,8 +263,9 @@ export class Unit extends Entity implements Tile.ITileableObject{
     }
 
     private removeUnit(){
-        engine.removeSystem(this._stateMachine)
-        engine.removeEntity(this)        
+        //engine.removeSystem(this._stateMachine)
+        //engine.removeEntity(this)        
+        this._transform.position = new Vector3(2,-2,2)
     }
 }
 

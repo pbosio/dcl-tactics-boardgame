@@ -1,5 +1,4 @@
 import { Unit } from "../unit/unit";
-import { Faction } from "../unit/faction";
 import { BillBoardComponent } from "../modules/billboardComponent";
 import { AttackManager } from "./attackManager";
 
@@ -7,8 +6,7 @@ export class LifeBarSystem implements ISystem, Unit.IUnitListener{
 
     private _lifeBars: LifeBar[] = []
 
-    constructor(){
-        let units = Faction.getAllUnits()
+    constructor(units: Unit[]){
         units.forEach(unit => {
             this._lifeBars.push(new LifeBar(unit))
         });
@@ -21,22 +19,36 @@ export class LifeBarSystem implements ISystem, Unit.IUnitListener{
     }
 
     onDead(unit: Unit){
-        for(let i=0; i<this._lifeBars.length; i++){
+        /*for(let i=0; i<this._lifeBars.length; i++){
             if (this._lifeBars[i].isOwner(unit)){
                 this._lifeBars[i].remove()
                 this._lifeBars.splice(i,1)
                 break
             }
-        }
+        }*/
     }
 
     onHit(attackInstance: AttackManager.AttackInstance){
+        this.updateValue(attackInstance.target, attackInstance.target.getHP() - attackInstance.totalDamage)
+    }
+
+    onRest(unit: Unit, recoveredHP: number){
+        this.updateValue(unit, unit.getHP() + recoveredHP)
+    }
+
+    private updateValue(unit: Unit, hp: number){
         for(let i=0; i<this._lifeBars.length; i++){
-            if (this._lifeBars[i].isOwner(attackInstance.target)){
-                this._lifeBars[i].setLifeRatio((attackInstance.target.getHP() - attackInstance.totalDamage)/attackInstance.target.getFullHP())
+            if (this._lifeBars[i].isOwner(unit)){
+                this._lifeBars[i].setLifeRatio(hp/unit.getFullHP())
                 break
             }
-        }       
+        } 
+    }
+
+    reset(){
+        for(let i=0; i<this._lifeBars.length; i++){
+            this._lifeBars[i].setLifeRatio(1)
+        }
     }
 
 }
