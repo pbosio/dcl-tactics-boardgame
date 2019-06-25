@@ -15,6 +15,7 @@ import { HintUI } from "./screens/hintUI";
 import { ArrowProjectile } from "./unit/projectileArrow";
 import { GameOverScreen } from "./screens/gameoverScreen";
 import { Tile } from "./grid/tile";
+import { HexWall } from "./game/hexWall";
 
 //*********************************
 //Decoration
@@ -22,8 +23,25 @@ import { Tile } from "./grid/tile";
 const stoneTableEntity = new Entity()
 stoneTableEntity.addComponent(new GLTFShape("models/stone_block.gltf"))
 stoneTableEntity.addComponent(new Transform({position:new Vector3(16,0,16), scale:new Vector3(0.02,0.01,0.02)}))
-
 engine.addEntity(stoneTableEntity)
+
+const arenaMaterial = new Material()
+arenaMaterial.albedoTexture = new Texture("images/arena.png",{hasAlpha: true})
+arenaMaterial.hasAlpha = true
+//arenaMaterial.alpha = 0
+
+const arena = new HexWall(new Vector3(16,0,16), 12, 8, arenaMaterial)
+engine.addSystem(arena)
+
+const sandMaterial = new Material()
+sandMaterial.albedoTexture = new Texture("images/sand.jpg")
+sandMaterial.bumpTexture = new Texture("images/sandbump.jpg")
+
+const floorEntity = new Entity()
+floorEntity.addComponent(new PlaneShape())
+floorEntity.addComponent(new Transform({position: new Vector3(16,0,16), scale: new Vector3(32,32,1), rotation: Quaternion.Euler(90,0,0)}))
+floorEntity.addComponent(sandMaterial)
+engine.addEntity(floorEntity)
 
 //*********************************
 //Create Grid & Grid Manager
